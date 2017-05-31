@@ -10,9 +10,9 @@
 
 # load necessary packages (install first, if needed)
 require('plyr')
-#require('xlsx')
+require('xlsx')
 require('lubridate')
-
+#install.packages("xlsx")
 # clear workspace
 rm(list=ls())
 
@@ -22,7 +22,14 @@ setwd('C:\\Users\\Dell Computer\\Documents\\Research')
 
 # read in the data from both towers
 tow.shrub <- read.csv("shrub_all.csv",header=T,as.is=TRUE)
+tow.shrub$TIME <- as.Date(tow.shrub$TIMESTAMP, format="%m/%d/%Y %I:%M")
+tow.shrub$Doy <- yday(tow.shrub$TIME)
+tow.shrub$year <- year(tow.shrub$TIME)
+
 tow.tus <- read.csv("tussock_all.csv",header=T)
+tow.tus$TIME <- as.Date(tow.tus$TIMESTAMP, format="%m/%d/%Y %I:%M")
+tow.tus$Doy <- yday(tow.tus$TIME)
+tow.tus$year <- year(tow.tus$TIME)
 
 dec.shr <- read.csv("CombinedShrub2.csv")
 dec.shr$TIME <- as.Date(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
@@ -35,8 +42,23 @@ dec.tus$TIME <- as.POSIXct(dec.tus$Measurement.Time, format="%m/%d/%Y %I:%M %p")
 dec.tus$Doy <- yday(dec.tus$TIME)
 dec.tus$year <- year(dec.tus$TIME)
 
+memory.limit(size = NA)
+memory.limit(size = 16000)
+memory.limit(size = NA)
+#joining decagon loggers
 joined <- join(dec.shr, dec.tus, by=c("Doy","hour","minute"), type="full")
+write.table(joined,file="decJoin.csv",sep=",",row.names = F)
 
+#joining campbell loggers
+joined <- join(tow.shrub, tow.tus, by=c("Doy","hour","minute"), type="full")
+write.table(towjoin,file="towJoin.csv",sep=",",row.names = F)
+##some kind of error is happening here
+
+
+
+
+
+##Fix for aggregated data
 ##screen the albedo data using 10th and 90th percentiles
 sq <- quantile(tow.shrub$Albedo_Avg,probs=c(.1,.9),na.rm=T)
 tq <- quantile(tow.tus$Albedo_Avg,probs=c(.1,.9),na.rm=T)
