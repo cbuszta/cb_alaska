@@ -6,13 +6,10 @@
 # MML 2 Dec 2016
 ################################
 
-#new comment, practice Github
-
 # load necessary packages (install first, if needed)
 require('plyr')
 require('xlsx')
 require('lubridate')
-#install.packages("xlsx")
 # clear workspace
 rm(list=ls())
 
@@ -21,15 +18,28 @@ rm(list=ls())
 setwd('C:\\Users\\Dell Computer\\Documents\\Research')
 
 # read in the data from both towers
-tow.shrub <- read.csv("shrub_all.csv",header=T,as.is=TRUE)
-tow.shrub$TIME <- as.Date(tow.shrub$TIMESTAMP, format="%m/%d/%Y %I:%M")
+tow.shrub <- read.csv("shrub_all(2).csv",header=T, sep = ",",
+                      na.strings = c("NAN","NA","-7999","INF"))
+print(tow.shrub$Albedo_Avg)
+tow.shrub$TIME <- as.POSIXct(tow.shrub$TIMESTAMP, format="%m/%d/%Y %H:%M")
 tow.shrub$Doy <- yday(tow.shrub$TIME)
 tow.shrub$year <- year(tow.shrub$TIME)
+tow.shrub$hour <- hour(tow.shrub$TIME)
+tow.shrub$minute <- minute(tow.shrub$TIME)
 
-tow.tus <- read.csv("tussock_all.csv",header=T)
-tow.tus$TIME <- as.Date(tow.tus$TIMESTAMP, format="%m/%d/%Y %I:%M")
+tow.tus <- read.table("tussock_all(2).csv",header=T, sep = ",",
+                    na.strings = c("NAN","NA","-7999","INF"))
+# exps <- "[:punct:]"
+# AlbFlag <- ifelse(is.na(tow.tus$Albedo_Avg), FALSE, grep(exps, tow.tus$Albedo_Avg))
+# tow.tus$Albedo_Avg[AlbFlag==TRUE]
+# print(tow.tus$Albedo_Avg)
+
+
+tow.tus$TIME <- as.POSIXct(tow.tus$TIMESTAMP, format="%m/%d/%Y %H:%M")
 tow.tus$Doy <- yday(tow.tus$TIME)
 tow.tus$year <- year(tow.tus$TIME)
+tow.tus$hour <- hour(tow.tus$TIME)
+tow.tus$minute <- minute(tow.tus$TIME)
 
 dec.shr <- read.csv("CombinedShrub2.csv")
 dec.shr$TIME <- as.Date(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
@@ -41,6 +51,7 @@ dec.tus <- read.csv("CombinedTussock2.csv",header=T)
 dec.tus$TIME <- as.POSIXct(dec.tus$Measurement.Time, format="%m/%d/%Y %I:%M %p")
 dec.tus$Doy <- yday(dec.tus$TIME)
 dec.tus$year <- year(dec.tus$TIME)
+print(dec.tus$RH)
 
 memory.limit(size = NA)
 memory.limit(size = 16000)
@@ -50,32 +61,30 @@ joined <- join(dec.shr, dec.tus, by=c("Doy","hour","minute"), type="full")
 write.table(joined,file="decJoin.csv",sep=",",row.names = F)
 
 #joining campbell loggers
-joined <- join(tow.shrub, tow.tus, by=c("Doy","hour","minute"), type="full")
-write.table(towjoin,file="towJoin.csv",sep=",",row.names = F)
-##some kind of error is happening here
+joined2 <- join(tow.shrub, tow.tus, by = c("Doy","hour","minute"), type="full")
+write.table(joined2,file="towJoin.csv",sep=",",row.names = F)
 
 
 
-
-
-##Fix for aggregated data
+##Clean aggregated data
 ##screen the albedo data using 10th and 90th percentiles
-sq <- quantile(tow.shrub$Albedo_Avg,probs=c(.1,.9),na.rm=T)
-tq <- quantile(tow.tus$Albedo_Avg,probs=c(.1,.9),na.rm=T)
+qq <- quantile(joined2$Albedo_Avg, probs=c(.1,.9),na.rm=T)
+# sq <- quantile(tow.shrub$Albedo_Avg,probs=c(0.1,0.9),na.rm=T)
+# tq <- quantile(tow.tus$Albedo_Avg,probs=c(.1,.9),na.rm=T)
 
-tow.shrub$Albedo_Avg[tow.shrub$Albedo_Avg<sq[1]] <- NA
-tow.shrub$Albedo_Avg[tow.shrub$Albedo_Avg>sq[2]] <- NA
+joined2$Albedo_Avg[joined2$Albedo_Avg<sq[1]] <- NA
+joined2$Albedo_Avg[joined2$Albedo_Avg>sq[2]] <- NA
 
-tow.tus$Albedo_Avg[tow.tus$Albedo_Avg<tq[1]] <- NA
-tow.tus$Albedo_Avg[tow.tus$Albedo_Avg>tq[2]] <- NA
+# tow.tus$Albedo_Avg[tow.tus$Albedo_Avg<tq[1]] <- NA
+# tow.tus$Albedo_Avg[tow.tus$Albedo_Avg>tq[2]] <- NA
 
 ## convert the longwave radiation to surface temp using 
 ## stefan-boltzman equation
 pc <- 5.670373*10^-8
 e <- 0.95
 
-tow.shrub$Tsurf <- (((tow.shrub$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
-tow.tus$Tsurf <- (((tow.tus$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
+joined2$Tsurf <- (((joined2$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
+#tow.tus$Tsurf <- (((tow.tus$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
 
 # create a vector of unique yr-mon-day hours
 s.hr <- substr(tow.shrub$TIMESTAMP,1,13)
@@ -91,7 +100,6 @@ tstamp <- as.POSIXlt(tow.shrub$TIMESTAMP, format= "%m/%d/%Y %H:%M")
 s.hhr <- substr(tow.shrub$TIMESTAMP,1,13)
 t.hhr <- substr(tow.shrub$TIMESTAMP,1,13)
 test1 <- tow.shrub$TIMESTAMP
-test1
 
 # now aggregate to hourly & date
 
