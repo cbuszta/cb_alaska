@@ -11,7 +11,8 @@ require('lubridate')
 # clear workspace
 rm(list=ls())
 
-setwd('C:\\Users\\Dell Computer\\Documents\\Research')
+#setwd('C:\\Users\\Dell Computer\\Documents\\Research')
+setwd("c:\\Users\\hkropp\\Google Drive\\Claudia data")
 
 #read in campbell loggers, create timestamps
 tow.shrub <- read.table("shrub_all(2).csv",header=T, sep = ",", na.strings = c("NAN","NA","-7999","INF"))
@@ -65,7 +66,24 @@ tussjoin$Tsurf <- (((tussjoin$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
 
 #save original joined files
 write.table(tussjoin,file="tussJoin.csv",sep=",",row.names = F)
-write.table(shrubjoin,file="shrubJoin.csv",sep=",",row.names = F)
+
+
+startS <- c(1, 50000, 100000)
+endS <- c(49999, 99999, 143174)
+
+
+
+saveRDS(shrubjoin, "shrubjoin.rds")
+test<-readRDS("shrubjoin.rds")
+
+shrubjoinT <- list()
+for(i in 1:length(startS)){
+  shrubjoinT[[i]] <- shrubjoin[startS[i]:endS[i], ]
+  write.table(shrubjoinT[[i]],file=paste0("shrubJoin",i,".csv"),sep=",",row.names = F)
+}
+
+
+write.table(shrubjoin,file="shrubJoin.txt",sep="\t",row.names = F)
 
 
 write.table(shrubjoin[c(0:10000),], file = "shrubJoin.csv", sep=",", row.names = F)
