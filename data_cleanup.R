@@ -34,7 +34,9 @@ dec.shr <- read.csv("CombinedShrub2.csv")
 dec.shr$TIME <- as.Date(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
 dec.shr$Doy <- yday(dec.shr$TIME)
 dec.shr$year <- year(dec.shr$TIME)
-dec.shr <- dec.shr[-c(20387:25873), ] #clear a bunch of NA rows at the end
+
+dec.shr <- dec.shr[1:20386, ] #clear a bunch of NA rows at the end
+
 
 dec.tus <- read.csv("CombinedTussock2.csv",header=T)
 dec.tus$TIME <- as.POSIXct(dec.tus$Measurement.Time, format="%m/%d/%Y %I:%M %p")
@@ -48,6 +50,8 @@ shrubjoin <- join(dec.shr, tow.shrub, by=c("Doy","hour","minute"), type="full")
 tussjoin <- join(dec.tus, tow.tus, by=c("Doy","hour","minute"), type="full")
 head(dec.shr)
 head(tow.shrub)
+head(shrubjoin)
+dim(shrubjoin)
 
 ##screen the albedo data using 10th and 90th percentiles
 sq <- quantile(shrubjoin$Albedo_Avg, probs=c(.1,.9),na.rm=T)
@@ -65,7 +69,21 @@ tussjoin$Tsurf <- (((tussjoin$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
 
 #save original joined files
 write.table(tussjoin,file="tussJoin.csv",sep=",",row.names = F)
-write.table(shrubjoin,file="shrubJoin.csv",sep=",",row.names = F)
+
+startS <- c(1, 50000, 100000)
+endS <- c(49999, 99999, 143174)
+
+shrubjoinT <- list()
+for(i in 1:length(startS)){
+  shrubjoinT[[i]] <- shrubjoin[startS[i]:endS[i], ]
+  write.table(shrubjoinT[[i]],file=paste0("shrubJoin",i,".csv"),sep=",",row.names = F)
+}
+
+
+
+
+
+
 
 
 write.table(shrubjoin[c(0:10000),], file = "shrubJoin.csv", sep=",", row.names = F)
