@@ -4,6 +4,7 @@
 # Summer 2016
 # 
 # MML 2 Dec 2016
+# CB 2017
 ################################
 
 # load necessary packages (install first, if needed)
@@ -16,98 +17,15 @@ rm(list=ls())
 # set working directory
 #setwd('/Users/mloranty/Google Drive/Documents/Research/student_projects/Summer_2016/Buszta/aggregate/')
 setwd('C:\\Users\\Dell Computer\\Documents\\Research')
-# 
-# # read in the data from both towers
-# tow.shrub <- read.csv("shrub_all(2).csv",header=T, sep = ",",
-#                       na.strings = c("NAN","NA","-7999","INF"))
-# print(tow.shrub$Albedo_Avg)
-# tow.shrub$TIME <- as.POSIXct(tow.shrub$TIMESTAMP, format="%m/%d/%Y %H:%M")
-# tow.shrub$Doy <- yday(tow.shrub$TIME)
-# tow.shrub$year <- year(tow.shrub$TIME)
-# tow.shrub$hour <- hour(tow.shrub$TIME)
-# tow.shrub$minute <- minute(tow.shrub$TIME)
-# 
-# tow.tus <- read.table("tussock_all(2).csv",header=T, sep = ",",
-#                     na.strings = c("NAN","NA","-7999","INF"))
-# # exps <- "[:punct:]"
-# AlbFlag <- ifelse(is.na(tow.tus$Albedo_Avg), FALSE, grep(exps, tow.tus$Albedo_Avg))
-# tow.tus$Albedo_Avg[AlbFlag==TRUE]
-# print(tow.tus$Albedo_Avg)
 
-
-# tow.tus$TIME <- as.POSIXct(tow.tus$TIMESTAMP, format="%m/%d/%Y %H:%M")
-# tow.tus$Doy <- yday(tow.tus$TIME)
-# tow.tus$year <- year(tow.tus$TIME)
-# tow.tus$hour <- hour(tow.tus$TIME)
-# tow.tus$minute <- minute(tow.tus$TIME)
-# 
-# dec.shr <- read.csv("CombinedShrub2.csv")
-# dec.shr$TIME <- as.Date(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
-# dec.shr$Doy <- yday(dec.shr$TIME)
-# dec.shr$year <- year(dec.shr$TIME)
-# 
-# 
-# dec.tus <- read.csv("CombinedTussock2.csv",header=T)
-# dec.tus$TIME <- as.POSIXct(dec.tus$Measurement.Time, format="%m/%d/%Y %I:%M %p")
-# dec.tus$Doy <- yday(dec.tus$TIME)
-# dec.tus$year <- year(dec.tus$TIME)
-# print(dec.tus$RH)
-# 
-# memory.limit(size = NA)
-# memory.limit(size = 16000)
-# memory.limit(size = NA)
-# #joining decagon loggers
-# joined <- join(dec.shr, dec.tus, by=c("Doy","hour","minute"), type="full")
-# write.table(joined,file="decJoin.csv",sep=",",row.names = F)
-# 
-# #joining campbell loggers
-# joined2 <- join(tow.shrub, tow.tus, by = c("Doy","hour","minute"), type="full")
-# write.table(joined2,file="towJoin.csv",sep=",",row.names = F)
-# 
-# 
-# 
-# ##Clean aggregated data
-# ##screen the albedo data using 10th and 90th percentiles
-# qq <- quantile(joined2$Albedo_Avg, probs=c(.1,.9),na.rm=T)
-# # sq <- quantile(tow.shrub$Albedo_Avg,probs=c(0.1,0.9),na.rm=T)
-# # tq <- quantile(tow.tus$Albedo_Avg,probs=c(.1,.9),na.rm=T)
-# 
-# joined2$Albedo_Avg[joined2$Albedo_Avg<sq[1]] <- NA
-# joined2$Albedo_Avg[joined2$Albedo_Avg>sq[2]] <- NA
-# 
-# # tow.tus$Albedo_Avg[tow.tus$Albedo_Avg<tq[1]] <- NA
-# # tow.tus$Albedo_Avg[tow.tus$Albedo_Avg>tq[2]] <- NA
-# 
-# ## convert the longwave radiation to surface temp using 
-# ## stefan-boltzman equation
-# pc <- 5.670373*10^-8
-# e <- 0.95
-# 
-# joined2$Tsurf <- (((joined2$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
-# #tow.tus$Tsurf <- (((tow.tus$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
-# 
-# # create a vector of unique yr-mon-day hours
-# s.hr <- substr(tow.shrub$TIMESTAMP,1,13)
-# s.day <- substr(tow.shrub$TIMESTAMP,1,10)
-# 
-# t.hr <- substr(tow.tus$TIMESTAMP,1,13)
-# t.day <- substr(tow.tus$TIMESTAMP,1,10)
-# 
-# tstamp <- as.POSIXlt(tow.shrub$TIMESTAMP, format= "%m/%d/%Y %H:%M")
-#tstamp
 #pull out half hour into single column and then aggregate
 tussall <- readRDS("tussJoin.rds")
 shrall <- readRDS("shrubJoin.rds")
 
-
-s.hhr <- substr(tow.shrub$TIMESTAMP,1,13)
-t.hhr <- substr(tow.shrub$TIMESTAMP,1,13)
-test1 <- tow.shrub$TIMESTAMP
-
-# now aggregate to daily & half-hourly
+#aggregate to daily
 t.day <- substr(tussall$Doy,1,3)
-tussall_daily <- aggregate(tussall[,c(2:12,16,22:48)], by=list(t.day), FUN=mean,na.rm=T)
-#use colnames???
+tussall_daily <- aggregate(tussall[,c(2:12,15,16,22:48)], by=list(t.day), FUN=mean,na.rm=T)
+
 s.day <- substr(shrall$Doy,1,3)
 shrall_daily <- aggregate(shrall[,c(2:11,15,21:46)], by=list(s.day), FUN=mean,na.rm=T)
 
@@ -115,75 +33,23 @@ shrall_daily <- aggregate(shrall[,c(2:11,15,21:46)], by=list(s.day), FUN=mean,na
 tussall$hhr[tussall$minute>=30] <- 30
 tussall$hhr[tussall$minute<30] <- 0
 
-tussall$TIMEhhr <- as.POSIXct()
-#tussall_hhr <- aggregate(tussall[,c(2:12,16,22:49)], as.list(tussall[,16,49]), FUN=mean, na.rm=T)
+tussall$TIMEhhr <- as.POSIXct(paste(tussall$year, tussall$Doy, tussall$hour, tussall$hhr), format="%Y %j %H %M")
+t.hhr <- substr(tussall$TIMEhhr,1,19)
+tussall_hhr <- aggregate(tussall[,c(2:12,16,22:50)], by=list(t.hhr), FUN=mean, na.rm=T)
 
-#tow.tus$TIME <- as.POSIXct(tow.tus$TIMESTAMP, format="%m/%d/%Y %H:%M")
+shrall$hhr[shrall$minute>=30] <- 30
+shrall$hhr[shrall$minute<30] <- 0
 
-# tow.shrub.hr <- aggregate(tow.shrub[,c(9,17,23:24,30)],by=list(s.hr),FUN=mean,na.rm=T)
-# colnames(tow.shrub.hr)[2:6] <- paste(colnames(tow.shrub.hr)[2:6],'shrub',sep='.')
-# 
-# tow.shrub.day <- aggregate(tow.shrub[,c(9,17,23:24,30)],by=list(s.day),FUN=mean,na.rm=T)
-# colnames(tow.shrub.day)[2:6] <- paste(colnames(tow.shrub.day)[2:6],'shrub',sep='.')
-# 
-# tow.tus.hr <- aggregate(tow.tus[,c(9,17,23:24,31)],by=list(t.hr),FUN=mean,na.rm=T)
-# colnames(tow.tus.hr)[2:6] <- paste(colnames(tow.tus.hr)[2:6],'tus',sep='.')
-# 
-# tow.tus.day <- aggregate(tow.tus[,c(9,17,23:24,31)],by=list(t.day),FUN=mean,na.rm=T)
-# colnames(tow.tus.day)[2:6] <- paste(colnames(tow.tus.day)[2:6],'tus',sep='.')
-# 
- #Claudia
-# 
-# tow.shrub.hhr <- aggregate(tow.shrub[,c(9,17,23:24,30)],by=list(s.hhr),FUN=mean,na.rm=T)
-# colnames(tow.shrub.hr)[2:6] <- paste(colnames(tow.shrub.hhr)[2:6],'shrub',sep='.')
-# 
-# tow.tus.hhr <- aggregate(tow.tus[,c(9,17,23:24,31)],by=list(t.hhr),FUN=mean,na.rm=T)
-# colnames(tow.tus.day)[2:6] <- paste(colnames(tow.tus.hhr)[2:6],'tus',sep='.')
-
-
-#now the Decagon loggers
-dec.shr.hr <- aggregate(dec.shr[,c(4,8:11)],by=list(substr(dec.shr$TIME,1,13)),
-                        FUN=mean,na.rm=T)
-colnames(dec.shr.hr)[2:6] <- paste(colnames(dec.shr.hr)[2:6],'shrub',sep='.')
-
-dec.shr.day <- aggregate(dec.shr[,c(4,8:11)],by=list(substr(dec.shr$TIME,1,10)),
-                        FUN=mean,na.rm=T)
-colnames(dec.shr.day)[2:6] <- paste(colnames(dec.shr.day)[2:6],'shrub',sep='.')
-
-dec.tus.hr <- aggregate(dec.tus[,c(2:3,9:12)],by=list(substr(dec.tus$TIME,1,13)),
-                        FUN=mean,na.rm=T)
-colnames(dec.tus.hr)[2:3] <- paste(colnames(dec.tus.hr)[2:3],'tus',sep='.')
-
-dec.tus.day <- aggregate(dec.tus[,c(2:3,9:12)],by=list(substr(dec.tus$TIME,1,10)),
-                        FUN=mean,na.rm=T)
-colnames(dec.tus.day)[2:3] <- paste(colnames(dec.tus.day)[2:3],'tus',sep='.')
-
-all.hr <- join(tow.shrub.hr,tow.tus.hr,type='inner')
-all.hr <- join(all.hr,dec.tus.hr,type='inner')
-all.hr <- join(all.hr,dec.shr.hr,type='inner')
-
-all.day <- join(tow.shrub.day,tow.tus.day,type='inner')
-all.day <- join (all.day, dec.tus.day,type='inner')
-all.day <- join (all.day, dec.shr.day,type='inner')
-
-#Claudia
-all.hhr <- join(tow.shrub.hhr,tow.tus.hhr,type='inner')
-all.hhr <- join(all.hhr,dec.tus.hhr,type='inner')
-all.hhr <- join(all.hhr,dec.shr.hhr,type='inner')
-
-# make a date column that is actually a date
-all.hr$date <- as.POSIXct(all.hr$Group.1, format="%Y-%m-%d %H")
-all.day$date <- as.POSIXct(all.day$Group.1, format="%Y-%m-%d")
-#make a hhr date column
-all.hhr$date <- as.POSIXct(all.hhr$Group.1, format="%Y-%m-%d %M")
-
-## write these tables to files ##
-write.table(all.hr,file="hourly_energy_data.csv",sep=",",row.names = F)
-write.table(all.day,file="daily_energy_data.csv",sep=",",row.names = F)
-#me again
-write.table(all.hhr,file="half_hourly_data.csv",sep=",",row.names = F)
+shrall$TIMEhhr <- as.POSIXct(paste(shrall$year, shrall$Doy, shrall$hour, shrall$hhr), format="%Y %j %H %M")
+s.hhr <- substr(shrall$TIMEhhr,1,19)
+shrall_hhr <- aggregate(shrall[,c(2:11,15,22:48)], by=list(s.hhr), FUN=mean, na.rm=T)
 
 # now we can make some plots with the dates on axes
+plot(tussall_daily$TIME, tussall_daily$NDVI.2,
+     type = "l",
+     ylim=c(0,1),
+     xlab="", ylab="NDVI", col = "blue")
+
 plot(all.hr$date,all.hr$Albedo_Avg.shrub,
      type ='l', # line graph
      ylim=c(0.1,0.25), #set y axis limits

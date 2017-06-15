@@ -5,6 +5,7 @@
 #May 27 2017
 #########################
 
+require('stringi')
 require('plyr')
 #require('xlsx')
 require('lubridate')
@@ -31,28 +32,48 @@ tow.tus$minute <- minute(tow.tus$TIME)
 
 #read in decagon loggers, create timestamps
 dec.shr <- read.csv("CombinedShrub2.csv", header=T, na.strings = c("NAN","Nan","NA","-7999","INF"))
-dec.shr$TIME <- as.Date(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
+dec.shr$TIME <- as.POSIXct(dec.shr$Measurement.Time, format="%m/%d/%Y %I:%M %p")
 dec.shr$Doy <- yday(dec.shr$TIME)
 dec.shr$year <- year(dec.shr$TIME)
+dec.shr$hour <- hour(dec.shr$TIME)
+dec.shr$minute <- minute(dec.shr$TIME)
 
 dec.shr <- dec.shr[1:20386, ] #clear a bunch of NA rows at the end
-
 
 dec.tus <- read.csv("CombinedTussock2.csv",header=T, na.strings = c("NAN","Nan","NA","-7999","INF"))
 dec.tus$TIME <- as.POSIXct(dec.tus$Measurement.Time, format="%m/%d/%Y %I:%M %p")
 dec.tus$Doy <- yday(dec.tus$TIME)
 dec.tus$year <- year(dec.tus$TIME)
+dec.tus$hour <- hour(dec.tus$TIME)
+dec.tus$minute <- minute(dec.tus$TIME)
+
+#adjusting for join; aggregate every 5 minutes
+tow.tus$tens <- tow.tus$minute%/%10
+tow.tus$ones <- as.character(tow.tus$minute)
+tow.tus$ones <- as.numeric(stringi::stri_sub(tow.tus$ones, from=-1, to=-1))
+tow.tus$five[tow.tus$ones <= 4] <- 0
+tow.tus$five[tow.tus$ones > 4] <- 5
+tow.tus$ones <- (tow.tus$tens*10 + tow.tus$five)
+tow.tus$TIME <- as.POSIXct(paste(tow.tus$year, tow.tus$Doy, tow.tus$hour, tow.tus$ones), format="%Y %j %H %M")
+t.f <- substr(tow.tus$TIME,1,19)
+tow.tus2 <- aggregate(tow.tus[,c(2:38)], by =list(t.f), FUN=mean, na.rm=T)
+
+tow.shrub$tens <- tow.shrub$minute%/%10
+tow.shrub$ones <- as.character(tow.shrub$minute)
+tow.shrub$ones <- as.numeric(stringi::stri_sub(tow.shrub$ones, from=-1, to=-1))
+tow.shrub$five[tow.shrub$ones <=4] <- 0
+tow.shrub$five[tow.shrub$ones > 4] <- 5
+tow.shrub$ones <- (tow.shrub$tens *10 +tow.shrub$five)
+tow.shrub$TIME <- as.POSIXct(paste(tow.shrub$year, tow.shrub$Doy, tow.shrub$hour, tow.shrub$ones), format = "%Y %j %H %M")
+s.f <- substr(tow.shrub$TIME,1,19)
+tow.shrub2 <- aggregate(tow.shrub[,c(2:37)], by =list(s.f), FUN=mean, na.rm=T)
 
 #adjust memmory for file processes
 memory.limit(size = 100000)
 
 #Join loggers for shrub files and tussock files
-shrubjoin <- join(dec.shr, tow.shrub, by=c("Doy","hour","minute"), type="full")
-tussjoin <- join(dec.tus, tow.tus, by=c("Doy","hour","minute"), type="full")
-head(dec.shr)
-head(tow.shrub)
-head(shrubjoin)
-dim(shrubjoin)
+shrubjoin <- join(dec.shr, tow.shrub2, by=c("Doy","hour","minute"), type="full")
+tussjoin <- join(dec.tus, tow.tus2, by=c("Doy","hour","minute"), type="full")
 
 ##screen the albedo data using 10th and 90th percentiles
 sq <- quantile(shrubjoin$Albedo_Avg, probs=c(.1,.9),na.rm=T)
@@ -72,3 +93,9 @@ tussjoin$Tsurf <- (((tussjoin$IR01DnCo_Avg)/(pc*e))^(1/4))-273.15
 
 saveRDS(shrubjoin, "shrubJoin.rds")
 saveRDS(tussjoin, "tussJoin.rds")
+
+
+plot(tussjoin$TIME,tussjoin$Albedo_Avg,
+     type ='l', # line graph
+     ylim=c(0,0.4), #set y axis limits
+     xlab="", ylab="Albedo") #axis label
